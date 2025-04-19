@@ -1,0 +1,12 @@
+Train with REINFORCE
+python train.py
+
+Train with actor-critic
+python train.py --actor-critic
+
+Test with REINFORCE
+python test.py --model model.mdl
+
+Test with actor-critic
+python test.py --model model.mdl --actor-critic
+

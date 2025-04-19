@@ -36,7 +36,7 @@ def main():
 	policy = Policy(observation_space_dim, action_space_dim)
 	policy.load_state_dict(torch.load(args.model), strict=True)
 
-	agent = Agent(policy, device=args.device, actor_critic=args.actor_critic)
+	agent = Agent(policy, device=args.device, use_actor_critic=args.actor_critic)
 
 	for episode in range(args.episodes):
 		done = False
@@ -55,6 +55,8 @@ def main():
 			test_reward += reward
 
 		print(f"Episode: {episode} | Return: {test_reward}")
+
+	env.close()
 	
 
 if __name__ == '__main__':

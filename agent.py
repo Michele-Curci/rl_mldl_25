@@ -97,8 +97,16 @@ class Agent(object):
 
 
     def update_policy(self):
-        action_log_probs = torch.stack(self.action_log_probs, dim=0).to(self.train_device).squeeze(-1)
+        action_log_probs = torch.stack(self.action_log_probs, dim=0).to(self.train_device) #squeeze(-1)
         states = torch.stack(self.states, dim=0).to(self.train_device).squeeze(-1)
+
+        #debug
+        for i, v in enumerate(self.next_state_values):
+            if v.shape != self.next_state_values[0].shape:
+                print(f'Incosistent tensor at index {i}: shape {v.shape}')
+                print("All next_state_values shapes:", [v.shape for v in self.next_state_values])
+                
+
         next_states = torch.stack(self.next_states, dim=0).to(self.train_device).squeeze(-1)
         rewards = torch.stack(self.rewards, dim=0).to(self.train_device).squeeze(-1)
         done = torch.Tensor(self.done).to(self.train_device)
@@ -146,9 +154,13 @@ class Agent(object):
         x = torch.from_numpy(state).float().to(self.train_device)
 
         normal_dist, value = self.policy(x)
+        value = value.squeeze()
 
         if evaluation:  # Return mean
-            return normal_dist.mean, None, value if self.actor_critic else None
+            if self.use_actor_critic:
+                return normal_dist.mean, None, value
+            else:
+                return normal_dist.mean, None, None
 
         else:   # Sample from the distribution
             action = normal_dist.sample()
@@ -156,7 +168,10 @@ class Agent(object):
             # Compute Log probability of the action [ log(p(a[0] AND a[1] AND a[2])) = log(p(a[0])*p(a[1])*p(a[2])) = log(p(a[0])) + log(p(a[1])) + log(p(a[2])) ]
             action_log_prob = normal_dist.log_prob(action).sum()
 
-            return action, action_log_prob, value if self.actor_critic else None
+            if self.use_actor_critic:
+                return action, action_log_prob, value
+            else:
+                return action, action_log_prob, None
 
 
     def store_outcome(self, state, next_state, action_log_prob, reward, done, value=None, next_value=None):
@@ -167,5 +182,5 @@ class Agent(object):
         self.done.append(done)
 
         if self.use_actor_critic:
-            self.state_values.append(value)
-            self.next_state_values.append(next_value)
+            self.state_values.append(value.view(1))
+            self.next_state_values.append(next_value.view(1))
