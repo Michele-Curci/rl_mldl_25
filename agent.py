@@ -85,20 +85,27 @@ class Agent(object):
         self.optimizer = torch.optim.Adam(policy.parameters(), lr=1e-3)
 
         self.gamma = 0.99
+        self.use_actor_critic = use_actor_critic
+
+        self.reset_storage()
+        
+
+    def reset_storage(self):
         self.states = []
         self.next_states = []
         self.action_log_probs = []
         self.rewards = []
         self.done = []
-
-        self.use_actor_critic = use_actor_critic
         self.state_values = []
         self.next_state_values = []
 
-
     def update_policy(self):
-        action_log_probs = torch.stack(self.action_log_probs, dim=0).to(self.train_device) #squeeze(-1)
-        states = torch.stack(self.states, dim=0).to(self.train_device).squeeze(-1)
+        if len(self.states) == 0:
+            print("[Warning] No data collected, skipping update")
+            return
+
+        action_log_probs = torch.stack(self.action_log_probs).to(self.train_device) #squeeze(-1)
+        states = torch.stack(self.states, dim=0).to(self.train_device)
 
         #debug
         for i, v in enumerate(self.next_state_values):
@@ -107,11 +114,11 @@ class Agent(object):
                 print("All next_state_values shapes:", [v.shape for v in self.next_state_values])
                 
 
-        next_states = torch.stack(self.next_states, dim=0).to(self.train_device).squeeze(-1)
-        rewards = torch.stack(self.rewards, dim=0).to(self.train_device).squeeze(-1)
+        next_states = torch.stack(self.next_states).to(self.train_device)
+        rewards = torch.stack(self.rewards).to(self.train_device).squeeze()
         done = torch.Tensor(self.done).to(self.train_device)
 
-        self.states, self.next_states, self.action_log_probs, self.rewards, self.done = [], [], [], [], []
+        
 
         #
         # TASK 2:
@@ -119,7 +126,7 @@ class Agent(object):
         #   - compute policy gradient loss function given actions and returns
         #   - compute gradients and step the optimizer
         #
-        returns = discount_rewards(rewards, self.gamma)
+
 
         #
         # TASK 3:
@@ -132,19 +139,29 @@ class Agent(object):
             values = torch.stack(self.state_values).squeeze()
             next_values = torch.stack(self.next_state_values).squeeze()
 
+            #Bootstrapped returns
+            returns = []
+            R=0
+            for r, d, nv, in zip(reversed(rewards), reversed(done), reversed(next_values)):
+                R = r + self.gamma*R*(1. - d)
+                returns.insert(0, R)
+            returns = torch.stack(returns).detach()
+
             advantages = returns - values.detach()
 
             actor_loss = -(action_log_probs * advantages).mean()
             critic_loss = F.mse_loss(values, returns)
             loss = actor_loss + critic_loss
         else:
+            returns = discount_rewards(rewards, self.gamma).detach()
             loss = -(action_log_probs * returns).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
         self.optimizer.step()
 
-        self.state_values, self.next_state_values = [], []
+        self.reset_storage()
 
         return        
 
@@ -182,5 +199,5 @@ class Agent(object):
         self.done.append(done)
 
         if self.use_actor_critic:
-            self.state_values.append(value.view(1))
-            self.next_state_values.append(next_value.view(1))
+            self.state_values.append(value.detach().view(1))
+            self.next_state_values.append(next_value.detach().view(1))

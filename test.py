@@ -1,9 +1,7 @@
 """Test an RL agent on the OpenAI Gym Hopper environment"""
 import argparse
-
 import torch
 import gym
-
 from env.custom_hopper import *
 from agent import Agent, Policy
 
@@ -45,7 +43,7 @@ def main():
 
 		while not done:
 
-			action, _ = agent.get_action(state, evaluation=True) #add evaluation=True
+			action, *_ = agent.get_action(state, evaluation=True) #add evaluation=True
 
 			state, reward, done, info = env.step(action.detach().cpu().numpy())
 
