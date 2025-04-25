@@ -82,7 +82,7 @@ class Agent(object):
     def __init__(self, policy, device='cpu', use_actor_critic=False):
         self.train_device = device
         self.policy = policy.to(self.train_device)
-        self.optimizer = torch.optim.Adam(policy.parameters(), lr=1e-3)
+        self.optimizer = torch.optim.Adam(policy.parameters(), lr=1e-4)
 
         self.gamma = 0.99
         self.use_actor_critic = use_actor_critic
@@ -154,11 +154,38 @@ class Agent(object):
             loss = actor_loss + critic_loss
         else:
             returns = discount_rewards(rewards, self.gamma).detach()
-            loss = -(action_log_probs * returns).mean()
+            returns = (returns - returns.mean()) / (returns.std() + 1e-8)
+            baseline = 0
+            loss = -(action_log_probs * (returns - baseline)).mean()
 
         self.optimizer.zero_grad()
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+
+        # ========== DEBUG INFO ==========
+        print("\n[DEBUG] ====== Update Info ======")
+        print("Mean reward:", rewards.mean().item())
+        print("Std reward:", rewards.std().item())
+        print("Sample action log prob:", action_log_probs[0].item())
+        print("Sample return:", returns[0].item())
+
+        if self.use_actor_critic:
+            print("Mean state value:", values.mean().item())
+            print("Std state value:", values.std().item())
+            print("Mean advantage:", advantages.mean().item())
+            print("Std advantage:", advantages.std().item())
+            print("Actor loss:", actor_loss.item())
+            print("Critic loss:", critic_loss.item())
+        else:
+            print("REINFORCE loss:", loss.item())
+
+        total_norm = torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+        print("Gradient norm (clipped):", total_norm.item())
+
+        sigma_values = self.policy.sigma_activation(self.policy.sigma).detach().cpu().numpy()
+        print("Sigma (std dev) values:", sigma_values)
+        print("=================================\n")
+
         self.optimizer.step()
 
         self.reset_storage()

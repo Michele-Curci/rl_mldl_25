@@ -43,7 +43,7 @@ def main():
             if args.actor_critic:
                 action, log_prob, value = agent.get_action(state)
             else:
-                action, log_prob = agent.get_action(state)
+                action, log_prob, _ = agent.get_action(state)
                 value = None  # Unused in REINFORCE
 
             next_state, reward, done, info = env.step(action.detach().cpu().numpy())
