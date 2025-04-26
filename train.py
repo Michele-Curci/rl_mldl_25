@@ -10,8 +10,8 @@ from agent import Agent, Policy
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n-episodes', default=10000, type=int, help='Number of training episodes')
-    parser.add_argument('--print-every', default=2000, type=int, help='Print info every <> episodes')
+    parser.add_argument('--n-episodes', default=5000, type=int, help='Number of training episodes')
+    parser.add_argument('--print-every', default=1000, type=int, help='Print info every <> episodes')
     parser.add_argument('--device', default='cpu', type=str, help='network device [cpu, cuda]')
     parser.add_argument('--actor-critic', action='store_true', help='Use Actor-Critic instead of REINFORCE')
 
