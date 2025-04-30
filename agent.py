@@ -30,7 +30,7 @@ class Policy(torch.nn.Module):
         
         # Learned standard deviation for exploration at training time 
         self.sigma_activation = F.softplus
-        init_sigma = -1.0
+        init_sigma = 0.5
         self.sigma = torch.nn.Parameter(torch.zeros(self.action_space)+init_sigma)
 
 
@@ -40,12 +40,8 @@ class Policy(torch.nn.Module):
         # TASK 3: critic network for actor-critic algorithm
 
         self.fc1_critic = torch.nn.Linear(state_space, self.hidden)
-        self.ln1_critic = torch.nn.LayerNorm(self.hidden)
         self.fc2_critic = torch.nn.Linear(self.hidden, self.hidden)
-        self.ln2_critic = torch.nn.LayerNorm(self.hidden)
-        self.fc3_critic = torch.nn.Linear(self.hidden, self.hidden)
-        self.ln3_critic = torch.nn.LayerNorm(self.hidden)
-        self.fc4_critic = torch.nn.Linear(self.hidden, 1)
+        self.fc3_critic = torch.nn.Linear(self.hidden, 1)
 
         self.init_weights()
 
@@ -73,10 +69,9 @@ class Policy(torch.nn.Module):
             Critic
         """
         # TASK 3: forward in the critic network
-        x_critic = self.tanh(self.ln1_critic(self.fc1_critic(x)))
-        x_critic = self.tanh(self.ln2_critic(self.fc2_critic(x_critic)))
-        x_critic = self.tanh(self.ln3_critic(self.fc3_critic(x_critic)))
-        value = self.fc4_critic(x_critic)
+        x_critic = self.tanh(self.fc1_critic(x))
+        x_critic = self.tanh(self.fc2_critic(x_critic))
+        value = self.fc3_critic(x_critic)
 
         return normal_dist, value
 
@@ -91,12 +86,10 @@ class Agent(object):
                     list(self.policy.fc3_actor_mean.parameters()) + \
                     [self.policy.sigma]
         self.critic_params = list(self.policy.fc1_critic.parameters()) + \
-                     list(self.policy.fc2_critic.parameters()) + \
-                     list(self.policy.fc3_critic.parameters()) + \
-                     list(self.policy.fc4_critic.parameters())
+                     list(self.policy.fc2_critic.parameters()) + list(self.policy.fc3_critic.parameters())
 
         self.actor_optimizer = torch.optim.Adam(self.actor_params, lr=3e-4)
-        self.critic_optimizer = torch.optim.Adam(self.critic_params, lr=1e-3)
+        self.critic_optimizer = torch.optim.Adam(self.critic_params, lr=1e-4)
 
 
         self.actor_scheduler = torch.optim.lr_scheduler.StepLR(self.actor_optimizer, step_size=200, gamma=0.9)
@@ -109,6 +102,8 @@ class Agent(object):
         self.state_mean = torch.zeros(11).to(self.train_device)
         self.state_var = torch.ones(11).to(self.train_device)
         self.state_count = 1e-5
+        self.episode_count = 0
+        self.n_critic_updates = 2
 
         self.reset_storage()
         
@@ -139,6 +134,8 @@ class Agent(object):
             print("[Warning] No data collected, skipping update")
             return
 
+        self.episode_count += 1
+
         action_log_probs = torch.stack(self.action_log_probs).to(self.train_device) #squeeze(-1)
         states = torch.stack(self.states, dim=0).to(self.train_device)
         next_states = torch.stack(self.next_states).to(self.train_device)
@@ -150,64 +147,64 @@ class Agent(object):
             values = torch.stack(self.state_values).squeeze()
             next_values = torch.stack(self.next_state_values).squeeze()
 
-            #Bootstrapped returns
-            returns = []
-            R = next_values[-1] * (1.0 - done[-1])
-            for t in reversed(range(len(rewards))):
-                R = rewards[t] + self.gamma * R * (1.0 - done[t])
-                returns.insert(0, R)
-            returns = torch.stack(returns).detach()
-            returns = returns / 10.0
-
-            # Clip advantages
-            advantages = returns - values.detach()
+            advantages, returns = self.compute_gae(rewards, values, next_values, done, gamma=self.gamma, lam=0.95)
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
             normal_dist, _ = self.policy(states)
             entropy = normal_dist.entropy().sum(dim=-1).mean()
 
-            actor_loss = -(action_log_probs * advantages).mean()
-            critic_loss = F.mse_loss(values, returns)
+            actor_loss = -(action_log_probs * advantages).mean() - 0.001 * entropy
+            self.actor_optimizer.zero_grad()
+            actor_loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+            self.actor_optimizer.step()
+
+            for _ in range(self.n_critic_updates):
+                values = self.policy(states)[1].squeeze()
+                critic_loss = F.mse_loss(values, returns)
+                self.critic_optimizer.zero_grad()
+                critic_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+                self.critic_optimizer.step()
             
-            loss = actor_loss + 0.5 * critic_loss - 0.01 * entropy
+            self.actor_scheduler.step()
+            self.critic_scheduler.step()
         else:
-            returns = discount_rewards(rewards, self.gamma).detach()
-            returns = (returns - returns.mean()) / (returns.std() + 1e-8)
-            baseline = self.baseline
+            with torch.no_grad():
+                values = self.policy(states)[1].squeeze()
+            returns = discount_rewards(rewards, self.gamma)
+            advantage = returns - values
+            advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             normal_dist, _ = self.policy(states)
             entropy = normal_dist.entropy().sum(dim=-1).mean()
-            loss = -(action_log_probs * (returns - baseline)).mean()
-            loss = loss - 0.01 * entropy
+            loss = -(action_log_probs * advantage).mean() - 0.001 * entropy
 
-        self.actor_optimizer.zero_grad()
-        self.critic_optimizer.zero_grad()
-        loss.backward()
+            self.actor_optimizer.zero_grad()
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+            self.actor_optimizer.step()
+            self.actor_scheduler.step()
 
-        torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
         
 
-        self.actor_optimizer.step()
-        self.critic_optimizer.step()
-        self.actor_scheduler.step()
-        self.critic_scheduler.step()
-
         # === Debug Info ===
-        print("\n[DEBUG] ====== Update Info ======")
-        print("Mean reward:", rewards.mean().item())
-        if self.use_actor_critic:
-            print("Returns mean:", returns.mean().item())
-            print("Returns std:", returns.std().item())
-            print("Actor loss:", actor_loss.item())
-            print("Critic loss:", critic_loss.item())
-            print("[DEBUG] Sample value prediction:", values[0].item())
-            print("[DEBUG] Sample target return:", returns[0].item())
-            print("[DEBUG] Value prediction mean:", values.mean().item())
-            print("[DEBUG] Target returns mean:", returns.mean().item())
-            print("[DEBUG] Value prediction std:", values.std().item())
-            print("[DEBUG] Target returns std:", returns.std().item())
-        else:
-            print("REINFORCE loss:", loss.item())
-        print("=================================\n")
+        if self.episode_count is not None and self.episode_count % 1000 == 0:
+            print(f"\n[DEBUG] ====== Update Info — Episode {self.episode_count} ======")
+            print("Mean reward:", rewards.mean().item())
+            if self.use_actor_critic:
+                print("Returns mean:", returns.mean().item())
+                print("Returns std:", returns.std().item())
+                print("Actor loss:", actor_loss.item())
+                print("Critic loss:", critic_loss.item())
+                print("[DEBUG] Sample value prediction:", values[0].item())
+                print("[DEBUG] Sample target return:", returns[0].item())
+                print("[DEBUG] Value prediction mean:", values.mean().item())
+                print("[DEBUG] Target returns mean:", returns.mean().item())
+                print("[DEBUG] Value prediction std:", values.std().item())
+                print("[DEBUG] Target returns std:", returns.std().item())
+            else:
+                print("REINFORCE loss:", loss.item())
+            print("=================================\n")
 
 
         self.reset_storage()
@@ -236,6 +233,16 @@ class Agent(object):
             else:
                 return action, action_log_prob, None
 
+
+    def compute_gae(self, rewards, values, next_values, dones, gamma=0.99, lam=0.95):
+        advantages = torch.zeros_like(rewards)
+        gae = 0
+        for t in reversed(range(len(rewards))):
+            delta = rewards[t] + gamma * next_values[t] * (1 - dones[t]) - values[t]
+            gae = delta + gamma * lam * (1 - dones[t]) * gae
+            advantages[t] = gae
+        returns = advantages + values
+        return advantages.detach(), returns.detach()
 
     def store_outcome(self, state, next_state, action_log_prob, reward, done, value=None, next_value=None):
         self.states.append(torch.from_numpy(state).float())
