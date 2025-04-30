@@ -10,10 +10,11 @@ from agent import Agent, Policy
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n-episodes', default=5000, type=int, help='Number of training episodes')
+    parser.add_argument('--n-episodes', default=20000, type=int, help='Number of training episodes')
     parser.add_argument('--print-every', default=1000, type=int, help='Print info every <> episodes')
     parser.add_argument('--device', default='cpu', type=str, help='network device [cpu, cuda]')
     parser.add_argument('--actor-critic', action='store_true', help='Use Actor-Critic instead of REINFORCE')
+    parser.add_argument('--baseline', default=0, type=int, help='Value of the baseline used in REINFORCE')
 
     return parser.parse_args()
 
@@ -32,7 +33,7 @@ def main():
     action_space_dim = env.action_space.shape[-1]
 
     policy = Policy(observation_space_dim, action_space_dim)
-    agent = Agent(policy, device=args.device, use_actor_critic=args.actor_critic)
+    agent = Agent(policy, device=args.device, use_actor_critic=args.actor_critic, baseline=args.baseline)
 
     for episode in range(args.n_episodes):
         done = False
