@@ -6,11 +6,13 @@ import torch
 import gym
 from env.custom_hopper import *
 from agent import Agent, Policy
+import matplotlib.pyplot as plt
+import pickle
 
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--n-episodes', default=10000, type=int, help='Number of training episodes')
+    parser.add_argument('--n-episodes', default=20000, type=int, help='Number of training episodes')
     parser.add_argument('--print-every', default=10000, type=int, help='Print info every <> episodes')
     parser.add_argument('--device', default='cpu', type=str, help='network device [cpu, cuda]')
     parser.add_argument('--actor-critic', action='store_true', help='Use Actor-Critic instead of REINFORCE')
@@ -34,6 +36,8 @@ def main():
 
     policy = Policy(observation_space_dim, action_space_dim)
     agent = Agent(policy, device=args.device, use_actor_critic=args.actor_critic, baseline=args.baseline)
+
+    episodes_returns = []
 
     for episode in range(args.n_episodes):
         done = False
@@ -61,11 +65,16 @@ def main():
             state = next_state
             train_reward += reward
 
+        episodes_returns.append(train_reward)
+
         agent.update_policy()
 
         if (episode + 1) % args.print_every == 0:
             print(f'Training episode: {episode + 1}')
             print(f'Episode return: {train_reward:.2f}')
+
+    with open("training_stats.pkl", "wb") as f:
+        pickle.dump({"returns": episodes_returns,}, f)
 
     torch.save(agent.policy.state_dict(), "model.mdl")
     env.close()

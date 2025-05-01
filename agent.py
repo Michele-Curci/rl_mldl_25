@@ -49,7 +49,7 @@ class Policy(torch.nn.Module):
     def init_weights(self):
         for m in self.modules():
             if type(m) is torch.nn.Linear:
-                torch.nn.init.kaiming_normal_(m.weight, nonlinearity='tanh')
+                torch.nn.init.xavier_normal_(m.weight, gain=torch.nn.init.calculate_gain('tanh'))
                 torch.nn.init.zeros_(m.bias)
 
 
@@ -103,7 +103,7 @@ class Agent(object):
         self.state_var = torch.ones(11).to(self.train_device)
         self.state_count = 1e-5
         self.episode_count = 0
-        self.n_critic_updates = 2
+        self.n_critic_updates = 5
 
         self.reset_storage()
         
@@ -153,7 +153,7 @@ class Agent(object):
             normal_dist, _ = self.policy(states)
             entropy = normal_dist.entropy().sum(dim=-1).mean()
 
-            actor_loss = -(action_log_probs * advantages).mean() - 0.001 * entropy
+            actor_loss = -(action_log_probs * advantages).mean() - 0.05 * entropy
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
             torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
