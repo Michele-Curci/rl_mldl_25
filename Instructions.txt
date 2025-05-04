@@ -1,3 +1,5 @@
+Remember to change the path to the model
+
 Train with REINFORCE
 python train.py
 
