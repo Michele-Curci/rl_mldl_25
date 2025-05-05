@@ -9,3 +9,4 @@ ppo_custom_hopper/
 models/
 statistics/
 plots/
+.vscode/settings.json
