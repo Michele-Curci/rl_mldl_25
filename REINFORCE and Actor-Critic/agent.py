@@ -170,6 +170,7 @@ class Agent(object):
             self.actor_scheduler.step()
             self.critic_scheduler.step()
         else:
+            #Compute baseline (estimation of value function, similar to actor critic)
             with torch.no_grad():
                 values = self.policy(states)[1].squeeze()
             returns = discount_rewards(rewards, self.gamma)
