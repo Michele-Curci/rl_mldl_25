@@ -3,7 +3,6 @@ import torch
 import torch.nn.functional as F
 from torch.distributions import Normal
 import gym
-from env.custom_hopper import *
 
 
 class Policy(torch.nn.Module):
@@ -94,6 +93,8 @@ class Agent(object):
         self.gamma = 0.99
         self.states = []
         self.next_states = []
+        self.values = []
+        self.actions = []
         self.action_log_probs = []
         self.rewards = []
         self.done = []
@@ -134,6 +135,7 @@ class Agent(object):
         #       A_{t} = r + \gamma*V(s+1) - V(s)
 
         #   2.1. compute gamma*V(s+1)
+        next_state_tensor = torch.FloatTensor(next_state).unsqueeze(0).to(self.train_device)
         returns = []
         V_s_next = self.policy.critic_forward(next_state_tensor).detach()
         for r, d in zip(reversed(self.rewards), reversed(self.done)):
@@ -141,13 +143,13 @@ class Agent(object):
             returns.insert(0, V_s_next)
 
         #   2.2. compute tensors
-        next_state_tensor = torch.FloatTensor(next_state).unsqueeze(0).to(self.train_device)
         returns_tensor = torch.FloatTensor(returns).unsqueeze(1).to(self.train_device)
         values_tensor = torch.cat(self.values)
 
         #   2.3. compute advantage and normalize it
         advantage = returns_tensor - values_tensor
         advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
+        advantage = advantage.detach()
 
 
         ### 3. Calculate improvement with clipping (Heart of PPO <3)
@@ -178,9 +180,7 @@ class Agent(object):
 
             self.optimizer.zero_grad()
             clipped_loss.backward()
-            for param_group in self.optimizer.param_group:
-                for param in param_group['parama']:
-                    param_data += self.optimizer.default['lr'] * param.grad 
+            self.optimizer.step() 
 
         
         ### update policy and value function by MSE of loss
@@ -198,4 +198,6 @@ class Agent(object):
         self.rewards.clear()
         self.done.clear()
         self.values.clear()
+
+        return episode_reward
 
