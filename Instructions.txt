@@ -14,3 +14,9 @@ python test.py --model model.mdl --actor-critic
 
 Remember to use gpu
 --device cuda
+
+To run from folder
+python "PPO and SAC/train_SAC.py"
+
+To check tensorboard
+tensorboard --logdir ./sac_custom_hopper/

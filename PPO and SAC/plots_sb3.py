@@ -27,7 +27,7 @@ def plot_rewards(log_dir):
     plt.legend()
     plt.grid(True)
     plt.tight_layout()
-    plt.savefig("./plots/PPO_reward_plot.png")
+    plt.savefig("./plots/SAC_reward_plot.png")
     plt.close()
 
 def plot_comparison():
@@ -97,6 +97,6 @@ def plot_comparison():
     plt.close()
 
 if __name__ == "__main__":
-    log_dir = "./ppo_custom_hopper/"  # or wherever you saved logs
-    #plot_rewards(log_dir)
-    plot_comparison()
+    log_dir = "./sac_custom_hopper/"
+    plot_rewards(log_dir)
+    #plot_comparison()
