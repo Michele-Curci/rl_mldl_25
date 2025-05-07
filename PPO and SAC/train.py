@@ -12,7 +12,7 @@ from env import custom_hopper
 
 def train():
     # === Config ===
-    total_episodes = 10000
+    total_episodes = 100000
     max_steps_per_episode = 1000
 
     # === Set up environment and agent ===
