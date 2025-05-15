@@ -17,6 +17,7 @@ Remember to use gpu
 
 To run from folder
 python "PPO and SAC/train_SAC.py"
+python "PPO and SAC/test_sb3.py"
 
 To check tensorboard
 tensorboard --logdir ./sac_custom_hopper/

@@ -1,19 +1,22 @@
 import gym
 import pandas as pd
-from env.custom_hopper import *
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines3.common.evaluation import evaluate_policy
 from stable_baselines3.common.monitor import Monitor
 import time
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from env.custom_hopper import *
 
 def render_test(env_name, vecnorm_path, model_path):
     # Load environment and wrap in VecEnv
     env = Monitor(gym.make(env_name))
     env = DummyVecEnv([lambda: env])
-    env = VecNormalize.load(vecnorm_path, env)
-    env.training = False
-    env.norm_reward = False
+    #env = VecNormalize.load(vecnorm_path, env)
+    #env.training = False
+    #env.norm_reward = False
 
     # Load trained model
     model = PPO.load(model_path)
@@ -36,9 +39,9 @@ def test_policy(env_name, vecnorm_path, model_path):
     # Load environment and wrap in VecEnv
     env = Monitor(gym.make(env_name))
     env = DummyVecEnv([lambda: env])
-    env = VecNormalize.load(vecnorm_path, env)
-    env.training = False
-    env.norm_reward = False
+    #env = VecNormalize.load(vecnorm_path, env)
+    #env.training = False
+    #env.norm_reward = False
 
     # Load trained model
     model = PPO.load(model_path)
@@ -83,15 +86,16 @@ def save_metrics():
     df.to_csv('./statistics/ppo_metrics.csv', index=False)
 
 def main():
-    #env_name, vecnorm_path, model_path = 'CustomHopper-source-v0', "./models/PPO_Source_vecnormalize.pkl", "./models/PPO_Source_model.zip"
-    env_name, vecnorm_path, model_path = 'CustomHopper-target-v0', "./models/PPO_Target_vecnormalize.pkl", "./models/PPO_Target_model.zip"
+    env_name, vecnorm_path, model_path = 'CustomHopper-source-v0', "./models/PPO_Source_vecnormalize.pkl", "./models/UDR_PPO_Source_model.zip"
+    #env_name, vecnorm_path, model_path = 'CustomHopper-target-v0', "./models/PPO_Target_vecnormalize.pkl", "./models/PPO_Target_model.zip"
 
+    env_name = 'CustomHopper-target-v0'
     #Use these only for single model test
-    #render_test(env_name, vecnorm_path, model_path)
-    #test_policy(env_name, vecnorm_path, model_path)
+    render_test(env_name, vecnorm_path, model_path)
+    test_policy(env_name, vecnorm_path, model_path)
 
     #Use this to compare the two models
-    save_metrics()
+    #save_metrics()
 
 if __name__ == '__main__':
     main()

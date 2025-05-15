@@ -6,7 +6,9 @@ __pycache__
 */pycache
 venv/
 ppo_custom_hopper/
+udr_ppo_custom_hopper/
 sac_custom_hopper/
+udr_sac_custom_hopper/
 models/
 statistics/
 plots/

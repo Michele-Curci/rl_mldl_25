@@ -45,10 +45,10 @@ def test_policy(env_name, model_path):
 
 
 def main():
-    env_name, model_path = 'CustomHopper-source-v0', "./models/SAC_Source_model.zip"
+    env_name, model_path = 'CustomHopper-target-v0', "./models/UDR_SAC_Source_model.zip"
 
     render_test(env_name, model_path)
-    #test_policy(env_name, model_path)
+    test_policy(env_name, model_path)
 
 
 if __name__ == '__main__':

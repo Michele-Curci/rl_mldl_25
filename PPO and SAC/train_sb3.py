@@ -5,22 +5,50 @@
     pipeline with an RL algorithm of your choice between PPO and SAC.
 """
 import gym
-from env.custom_hopper import *
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
-from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
+from stable_baselines3.common.vec_env import DummyVecEnv
 import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from env.custom_hopper import *
 
 
-#env_name = 'CustomHopper-source-v0'
-env_name = 'CustomHopper-target-v0'
+env_name = 'CustomHopper-source-v0'
+#env_name = 'CustomHopper-target-v0'
+
+class DomainRandomizationWrapper(gym.Wrapper):
+    def __init__(self, env, variation_ratio=0.3):
+        super().__init__(env)
+        self.variation_ratio = variation_ratio
+        self.body_names = ["thigh", "leg", "foot"]
+
+        # Precompute body indices for performance
+        self.body_masses = {
+            name: self.env.sim.model.body_mass[self.env.sim.model.body_name2id(name)] for name in self.body_names
+        }
+
+    def reset(self, **kwargs):
+        for name, mass in self.body_masses.items():
+            # Define bounds around original value (e.g., ±30%)
+            low = (1.0 - self.variation_ratio) * mass
+            high = (1.0 + self.variation_ratio) * mass
+
+            # Sample new mass
+            new_mass = np.random.uniform(low, high)
+
+            # Apply it
+            self.env.sim.model.body_mass[self.env.sim.model.body_name2id(name)] = new_mass
+
+        return self.env.reset(**kwargs)
 
 def main():
-    log_dir = "./ppo_custom_hopper/"
+    log_dir = "./udr_ppo_custom_hopper/"
     os.makedirs(log_dir, exist_ok=True)
 
     train_env = gym.make(env_name)
+    train_env = DomainRandomizationWrapper(train_env, variation_ratio=0.3)
     train_env = Monitor(train_env, filename=os.path.join(log_dir, "monitor.csv"))
     train_env = DummyVecEnv([lambda: train_env])
     #train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.0)
