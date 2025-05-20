@@ -12,6 +12,11 @@ import numpy as np
 env_name = 'CustomHopper-source-v0'
 
 class ADRWrapper(gym.Wrapper):
+    """Wrap the base environment, appling perturbations to body masses before each episode.
+    params: env: The environment to wrap
+            adversary_policy: The policy that decides how to perturb the body masses
+            body_names: Parts of the leg to modify
+            variation_ratio: Maximum perturbation (30% of original mass)"""
     def __init__(self, env, adversary_policy, body_names=["thigh", "leg", "foot"], variation_ratio=0.3):
         super().__init__(env)
         self.adversary = adversary_policy
@@ -19,14 +24,16 @@ class ADRWrapper(gym.Wrapper):
         self.variation_ratio = variation_ratio
         self.original_masses = {
             name: self.env.sim.model.body_mass[self.env.sim.model.body_name2id(name)] for name in self.body_names
-        }
+        } #Get all the hopper original masses
 
     def reset(self, **kwargs):
-        obs = self.env.reset(**kwargs)
-        obs_tensor = np.array(obs, dtype=np.float32)
-        perturbation = self.adversary.predict(obs_tensor, deterministic=True)[0]
+        obs = self.env.reset(**kwargs) #Reset the environment
+        obs_tensor = np.array(obs, dtype=np.float32) 
+        perturbation = self.adversary.predict(obs_tensor, deterministic=True)[0] #Predict the extent of the perturbation from adversary policy
 
         for i, name in enumerate(self.body_names):
+            """For each part of the hopper (except the torso) we modify the mass based on the predicted perturbation 
+            that is in [-1,1] continuous range (see AdversarialEnv class). We also clip it so that the new mass is between 10% and 2x of the original mass"""
             original_mass = self.original_masses[name]
             delta = perturbation[i] * self.variation_ratio * original_mass
             new_mass = np.clip(original_mass + delta, 0.1 * original_mass, 2.0 * original_mass)
@@ -34,7 +41,15 @@ class ADRWrapper(gym.Wrapper):
 
         return self.env.reset(**kwargs)
 
+
+
 class AdversarialEnv(gym.Env):
+    """
+    The custom environment where advesarial is trained. The adversarial chooses mass perturbations and a random action agent tries to maximize its reward.
+    params: env_name: Name of the environment to use
+            body_names: Parts of the leg to modify
+            variation_ratio: Maximum perturbation (30% of original mass)
+    """
     def __init__(self, env_name, body_names=["thigh", "leg", "foot"], variation_ratio=0.3):
         super().__init__()
         self.env_name = env_name
@@ -51,6 +66,7 @@ class AdversarialEnv(gym.Env):
         self.obs = self.env.reset(**kwargs)
         return self.obs
 
+    #When the adversarial chooses an action it applies the perturbation to the hopper's leg
     def step(self, action):
         for i, name in enumerate(self.body_names):
             original_mass = self.original_masses[name]
@@ -58,6 +74,7 @@ class AdversarialEnv(gym.Env):
             new_mass = np.clip(original_mass + delta, 0.1 * original_mass, 2.0 * original_mass)
             self.env.sim.model.body_mass[self.env.sim.model.body_name2id(name)] = new_mass
 
+        #Simulates an episode with a random policy. The adversary receives reward = negative of total agent reward (goal is to make it fail)
         total_reward = 0
         done = False
         steps = 0
@@ -66,7 +83,6 @@ class AdversarialEnv(gym.Env):
             obs, reward, done, info = self.env.step(a)
             total_reward += reward
             steps += 1
-
         reward_adv = -total_reward
         return self.obs, reward_adv, True, {}
 
@@ -93,6 +109,7 @@ class WandbEpisodeRewardCallback(BaseCallback):
                     })
         return True
 
+#Trains the adversarial policy (PPO) in the AdversarialEnv 100k episodes
 def train_adversary():
     adv_env = DummyVecEnv([lambda: AdversarialEnv('CustomHopper-source-v0')])
     model = PPO("MlpPolicy", adv_env, verbose=1)
@@ -100,7 +117,7 @@ def train_adversary():
     model.save("adr_adversary")
     return model
 
-
+#Train the protagonist policy (PPO) using the adversarial policy as wrapper around the source environment
 def train_protagonist(adversary):
     train_env = gym.make('CustomHopper-source-v0')
     train_env = ADRWrapper(train_env, adversary)
@@ -122,7 +139,6 @@ def train_protagonist(adversary):
             "learning_rate": 0.0003
         }
     )
-
     model = PPO("MlpPolicy", train_env, verbose=1, gamma=0.99, n_steps=4096, batch_size=128, learning_rate=0.0003)
     model.learn(
         total_timesteps=timesteps,
@@ -150,11 +166,10 @@ def evaluate_on_target(model):
 def main():
     adversary = train_adversary()
     train_protagonist(adversary)
+    test_env = gym.make("CustomHopper-source-v0")       
     model = PPO.load("ppo_hopper_Source_with_ADR", env=test_env)
     mean_reward, std_reward = evaluate_on_target(model)
     print(f"Mean reward on target: {mean_reward} +/- {std_reward}")
-
-
 
 if __name__ == '__main__':
     main()
