@@ -86,9 +86,9 @@ def save_metrics():
     df.to_csv('./statistics/ppo_metrics.csv', index=False)
 
 def main():
-    env_name, vecnorm_path, model_path = 'CustomHopper-source-v0', "./models/PPO_Source_vecnormalize.pkl", "./models/UDR_PPO_Source_model.zip"
-    #env_name, vecnorm_path, model_path = 'CustomHopper-target-v0', "./models/PPO_Target_vecnormalize.pkl", "./models/PPO_Target_model.zip"
-
+    #env_name, vecnorm_path, model_path = 'CustomHopper-source-v0', "./models/PPO_Source_vecnormalize.pkl", "./models/UDR_PPO_Source_model.zip"
+    env_name, vecnorm_path, model_path = 'CustomHopper-target-v0', "./models/PPO_Target_vecnormalize.pkl", "./models/PPO_Target_model.zip"
+    model_path = "./ppo_target_hopper/best_model.zip"
     env_name = 'CustomHopper-target-v0'
     #Use these only for single model test
     render_test(env_name, vecnorm_path, model_path)

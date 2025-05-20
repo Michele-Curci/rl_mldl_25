@@ -44,11 +44,11 @@ class DomainRandomizationWrapper(gym.Wrapper):
         return self.env.reset(**kwargs)
 
 def main():
-    log_dir = "./udr_ppo_custom_hopper/"
+    log_dir = "./ppo_source_hopper/"
     os.makedirs(log_dir, exist_ok=True)
 
     train_env = gym.make(env_name)
-    train_env = DomainRandomizationWrapper(train_env, variation_ratio=0.3)
+    #train_env = DomainRandomizationWrapper(train_env, variation_ratio=0.3)
     train_env = Monitor(train_env, filename=os.path.join(log_dir, "monitor.csv"))
     train_env = DummyVecEnv([lambda: train_env])
     #train_env = VecNormalize(train_env, norm_obs=True, norm_reward=True, clip_obs=10.0)

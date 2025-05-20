@@ -6,9 +6,16 @@ __pycache__
 */pycache
 venv/
 ppo_custom_hopper/
+ppo_target_hopper/
+ppo_source_hopper/
 udr_ppo_custom_hopper/
 sac_custom_hopper/
+sac_source_hopper/
+sac_target_hopper/
 udr_sac_custom_hopper/
+ndr_sac_source_hopper/
 models/
 statistics/
 plots/
+maml_ppo_hopper/
+reptile_meta_model/

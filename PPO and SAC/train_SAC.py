@@ -9,8 +9,8 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from env.custom_hopper import *
 
 
-env_name = 'CustomHopper-source-v0'
-#env_name = 'CustomHopper-target-v0'
+#env_name = 'CustomHopper-source-v0'
+env_name = 'CustomHopper-target-v0'
 
 class DomainRandomizationWrapper(gym.Wrapper):
     def __init__(self, env, variation_ratio=0.3):
@@ -30,7 +30,8 @@ class DomainRandomizationWrapper(gym.Wrapper):
             high = (1.0 + self.variation_ratio) * mass
 
             # Sample new mass
-            new_mass = np.random.uniform(low, high)
+            #new_mass = np.random.uniform(low, high)
+            new_mass = np.random.normal(mass)
 
             # Apply it
             self.env.sim.model.body_mass[self.env.sim.model.body_name2id(name)] = new_mass
@@ -38,7 +39,7 @@ class DomainRandomizationWrapper(gym.Wrapper):
         return self.env.reset(**kwargs)
 
 def main():
-    log_dir = "./udr_sac_custom_hopper/"
+    log_dir = "./ndr_sac_source_hopper/"
     os.makedirs(log_dir, exist_ok=True)
     print("Created or found log_dir at:", os.path.abspath(log_dir))
 
@@ -74,7 +75,7 @@ def main():
         tensorboard_log=log_dir
     )
 
-    model.learn(total_timesteps=500_000, callback=[checkpoint_callback, eval_callback])
+    model.learn(total_timesteps=200_000, callback=[checkpoint_callback, eval_callback])
 
     model.save(os.path.join(log_dir, "final_model"))
 
