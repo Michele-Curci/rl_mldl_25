@@ -5,6 +5,7 @@ __pycache__
 *.pyc
 */pycache
 venv/
+venv38/
 ppo_custom_hopper/
 models/
 statistics/

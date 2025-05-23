@@ -1,5 +1,9 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import gym
 import pandas as pd
+import numpy._core
 from env.custom_hopper import *
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
@@ -47,7 +51,7 @@ def test_policy(env_name, vecnorm_path, model_path):
     print(f"Mean reward over 10 episodes: {mean_reward}")
     print(f"Standard deviation of reward: {std_reward}")
 
-def evaluate_model_on_env(model, env, n_eval_episodes=10):
+def evaluate_model_on_env(model, env, n_eval_episodes=50):
     # Wrap the environment with Monitor to track rewards and lengths
     env = Monitor(env)
     env = DummyVecEnv([lambda: env])

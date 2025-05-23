@@ -21,9 +21,9 @@ def train():
     # action_dim = env.action_space.n
     # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    save_dir = "/content/drive/MyDrive/rl_logs"
-    os.makedirs(save_dir, exist_ok=True)
-    save_path = os.path.join(save_dir, "reward_history.pkl")
+    # save_dir = "/"
+    # os.makedirs(save_dir, exist_ok=True)
+    # save_path = os.path.join(save_dir, "reward_history.pkl")
 
     rewards_history = []
 
@@ -41,8 +41,8 @@ def train():
         print(f"Episode {episode+1} | Reward: {episode_reward}")  
          
         rewards_history.append(episode_reward)
-        with open(save_path, 'wb') as f:
-            pickle.dump(rewards_history, f)
+        # with open(save_path, 'wb') as f:
+        #     pickle.dump(rewards_history, f)
 
     env.close()
 

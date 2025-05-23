@@ -4,6 +4,9 @@
     Read the stable-baselines3 documentation and implement a training
     pipeline with an RL algorithm of your choice between PPO and SAC.
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import gym
 from env.custom_hopper import *
 from stable_baselines3 import PPO
