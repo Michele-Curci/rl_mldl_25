@@ -1,10 +1,11 @@
 Remember to change the path to the model
 
 Train with REINFORCE
-python train.py
+python "REINFORCE and Actor-Critic/train.py"
+python "REINFORCE and Actor-Critic/train.py" --baseline 20
 
 Train with actor-critic
-python train.py --actor-critic
+python "REINFORCE and Actor-Critic/train.py" --actor-critic
 
 Test with REINFORCE
 python test.py --model model.mdl

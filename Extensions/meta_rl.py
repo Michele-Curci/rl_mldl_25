@@ -4,9 +4,10 @@ import torch
 import numpy as np
 from stable_baselines3 import PPO
 from stable_baselines3.common.vec_env import DummyVecEnv
+from stable_baselines3.common.evaluation import evaluate_policy
 from utils import sample_task, clone_model_weights, set_model_weights
 
-def reptile_meta_train(meta_iters=200, n_tasks=5, inner_steps=5000, meta_lr=0.1, save_path="reptile_meta_model"):
+def reptile_meta_train(meta_iters=500, n_tasks=2, inner_steps=5000, meta_lr=0.5, save_path="reptile_normal_model0.5"):
     os.makedirs(save_path, exist_ok=True)
 
     # Initial policy
@@ -40,7 +41,10 @@ def reptile_meta_train(meta_iters=200, n_tasks=5, inner_steps=5000, meta_lr=0.1,
 
         print(f"[Meta Iter {meta_iter}] Meta-update completed.")
 
-        if (meta_iter + 1) % 20 == 0:
+        if (meta_iter + 1) % 50 == 0:
+            eval_env = DummyVecEnv([lambda: sample_task()])
+            mean_reward, _ = evaluate_policy(model, eval_env, n_eval_episodes=5, return_episode_rewards=False)
+            print(f"[Meta Iter {meta_iter+1}] Mean Eval Reward: {mean_reward:.2f}")
             model.save(os.path.join(save_path, f"ppo_reptile_iter{meta_iter+1}"))
 
     model.save(os.path.join(save_path, "ppo_reptile_final"))

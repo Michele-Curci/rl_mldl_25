@@ -20,7 +20,7 @@ def evaluate_policy(model, env, n_episodes=5):
         rewards.append(total_reward)
     return np.mean(rewards), np.std(rewards)
 
-def test_reptile_meta_model(model_path="reptile_meta_model/ppo_reptile_final.zip", 
+def test_reptile_meta_model(model_path="reptile_normal_model0.5/ppo_reptile_final.zip", 
                             inner_steps=5000, 
                             n_test_tasks=5, 
                             n_eval_episodes=5):

@@ -4,10 +4,12 @@
 import argparse
 import torch
 import gym
-from env.custom_hopper import *
 from agent import Agent, Policy
-import matplotlib.pyplot as plt
-import pickle
+import wandb
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from env.custom_hopper import *
 
 
 def parse_args():
@@ -17,6 +19,8 @@ def parse_args():
     parser.add_argument('--device', default='cpu', type=str, help='network device [cpu, cuda]')
     parser.add_argument('--actor-critic', action='store_true', help='Use Actor-Critic instead of REINFORCE')
     parser.add_argument('--baseline', default=0, type=int, help='Value of the baseline used in REINFORCE')
+    parser.add_argument('--learning-rate', default=1e-3, type=float, help='Learning rate (for wandb tracking)')
+    parser.add_argument('--project', default='rl-hopper', type=str, help='wandb project name')
 
     return parser.parse_args()
 
@@ -24,8 +28,20 @@ args = parse_args()
 
 
 def main():
+
+    wandb.init(
+        project=args.project,
+        config={
+            "n_episodes": args.n_episodes,
+            "baseline": args.baseline,
+            "actor_critic": args.actor_critic,
+            "device": args.device,
+            "learning_rate": args.learning_rate
+        },
+        name=f"{'ActorCritic' if args.actor_critic else f'REINFORCE_baseline{args.baseline}'}"
+    )
+
     env = gym.make('CustomHopper-source-v0')
-    # env = gym.make('CustomHopper-target-v0')
 
     print('Action space:', env.action_space)
     print('State space:', env.observation_space)
@@ -67,17 +83,19 @@ def main():
 
         episodes_returns.append(train_reward)
 
+        wandb.log({"episode": episode, "return": train_reward})
+
         agent.update_policy()
 
         if (episode + 1) % args.print_every == 0:
             print(f'Training episode: {episode + 1}')
             print(f'Episode return: {train_reward:.2f}')
 
-    with open("training_stats.pkl", "wb") as f:
-        pickle.dump({"returns": episodes_returns,}, f)
-
-    torch.save(agent.policy.state_dict(), "model.mdl")
+    model_name = "ActorCritic.mdl" if args.actor_critic else f"Reinforce{'Baseline' if args.baseline != 0 else ''}.mdl"
+    torch.save(agent.policy.state_dict(), model_name)
+    wandb.save(model_name)
     env.close()
+    wandb.finish()
 
 
 if __name__ == '__main__':

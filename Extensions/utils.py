@@ -9,9 +9,12 @@ from env.custom_hopper import *
 
 def sample_task():
     env = gym.make('CustomHopper-source-v0')
-    env.sim.model.body_mass[env.sim.model.body_name2id("thigh")] *= np.random.uniform(0.7, 1.3)
-    env.sim.model.body_mass[env.sim.model.body_name2id("leg")] *= np.random.uniform(0.7, 1.3)
-    env.sim.model.body_mass[env.sim.model.body_name2id("foot")] *= np.random.uniform(0.7, 1.3)
+    #env.sim.model.body_mass[env.sim.model.body_name2id("thigh")] *= np.random.uniform(0.7, 1.3)
+    #env.sim.model.body_mass[env.sim.model.body_name2id("leg")] *= np.random.uniform(0.7, 1.3)
+    #env.sim.model.body_mass[env.sim.model.body_name2id("foot")] *= np.random.uniform(0.7, 1.3)
+    env.sim.model.body_mass[env.sim.model.body_name2id("thigh")] = np.random.normal(env.sim.model.body_mass[env.sim.model.body_name2id("thigh")])
+    env.sim.model.body_mass[env.sim.model.body_name2id("leg")] = np.random.normal( env.sim.model.body_mass[env.sim.model.body_name2id("leg")])
+    env.sim.model.body_mass[env.sim.model.body_name2id("foot")] = np.random.normal(env.sim.model.body_mass[env.sim.model.body_name2id("foot")])
     return env
 
 def clone_model_weights(model):

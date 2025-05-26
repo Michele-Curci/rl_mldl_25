@@ -19,3 +19,7 @@ statistics/
 plots/
 maml_ppo_hopper/
 reptile_meta_model/
+reptile_normal_model0.1/
+reptile_normal_model0.2/
+reptile_normal_model0.5/
+wandb/
