@@ -9,6 +9,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import gym
 from env.custom_hopper import *
+from pickle_callback import *
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, EvalCallback
 from stable_baselines3.common.monitor import Monitor
@@ -39,6 +40,8 @@ def main():
     #eval_env = VecNormalize(eval_env, norm_obs=True, norm_reward=True)
     #eval_env.training = False
     #eval_env.norm_reward = False
+    training_stats_path = os.path.join(log_dir, "ppo_training_stats.pkl")
+    stats_callback = SaveTrainingStatsCallback(training_stats_path)
     eval_callback = EvalCallback(eval_env, best_model_save_path=log_dir, log_path=log_dir, eval_freq=5000, deterministic=True, render=False)
 
     model = PPO(
@@ -55,10 +58,10 @@ def main():
         tensorboard_log=log_dir
     )
 
-    model.learn(total_timesteps=1_000_000, callback=[checkpoint_callback, eval_callback])
+    model.learn(total_timesteps=1_000_000, callback=[checkpoint_callback, eval_callback, stats_callback])
 
     model.save(os.path.join(log_dir, "final_model"))
-    #train_env.save(os.path.join(log_dir, "vecnormalize.pkl"))
+    # train_env.save(os.path.join(log_dir, "ppo.pkl"))
 
 
 if __name__ == '__main__':

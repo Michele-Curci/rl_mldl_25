@@ -1,6 +1,9 @@
 """Train an RL agent on the OpenAI Gym Hopper environment using
     REINFORCE and Actor-critic algorithms
 """
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import argparse
 import torch
 import gym
@@ -13,9 +16,9 @@ import pickle
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--n-episodes', default=20000, type=int, help='Number of training episodes')
-    parser.add_argument('--print-every', default=10000, type=int, help='Print info every <> episodes')
+    parser.add_argument('--print-every', default=1, type=int, help='Print info every <> episodes')
     parser.add_argument('--device', default='cpu', type=str, help='network device [cpu, cuda]')
-    parser.add_argument('--actor-critic', action='store_true', help='Use Actor-Critic instead of REINFORCE')
+    parser.add_argument('--actor-critic', default=True, action='store_true', help='Use Actor-Critic instead of REINFORCE')
     parser.add_argument('--baseline', default=0, type=int, help='Value of the baseline used in REINFORCE')
 
     return parser.parse_args()

@@ -11,3 +11,5 @@ models/
 statistics/
 plots/
 .vscode/settings.json
+ndr_sac_source_hopper/*
+wandb/*
