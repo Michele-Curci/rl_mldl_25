@@ -14,10 +14,12 @@ def reptile_meta_train(meta_iters=500, n_tasks=2, inner_steps=5000, meta_lr=0.5,
     base_env = DummyVecEnv([lambda: sample_task()])
     model = PPO("MlpPolicy", base_env, verbose=0)
 
+    # Number of updates for initial policy
     for meta_iter in range(meta_iters):
         initial_weights = clone_model_weights(model)
         weight_deltas = []
 
+        # Inner loop to train new policies with same weights as the initial policy
         for _ in range(n_tasks):
             # Sample new task
             task_env = DummyVecEnv([lambda: sample_task()])

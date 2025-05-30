@@ -22,11 +22,6 @@ args = parse_args()
 def main():
 
 	env = gym.make('CustomHopper-source-v0')
-	# env = gym.make('CustomHopper-target-v0')
-
-	print('Action space:', env.action_space)
-	print('State space:', env.observation_space)
-	print('Dynamics parameters:', env.get_parameters())
 	
 	observation_space_dim = env.observation_space.shape[-1]
 	action_space_dim = env.action_space.shape[-1]
@@ -43,7 +38,7 @@ def main():
 
 		while not done:
 
-			action, *_ = agent.get_action(state, evaluation=True) #add evaluation=True
+			action, *_ = agent.get_action(state, evaluation=True)
 
 			state, reward, done, info = env.step(action.detach().cpu().numpy())
 

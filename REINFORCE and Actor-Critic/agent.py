@@ -54,7 +54,7 @@ class Policy(nn.Module):
 
         self.init_weights()
 
-
+    # Initialize linear layers with xavier norm
     def init_weights(self):
         for m in self.modules():
             if type(m) is torch.nn.Linear:
@@ -78,9 +78,11 @@ class Agent(object):
         self.use_actor_critic = use_actor_critic
         self.baseline = baseline
 
+        # Two different optimizers for actor and critic, they can have different learning rate
         self.actor_optimizer = torch.optim.Adam(self.policy.actor.parameters(), lr=1e-3)
         self.critic_optimizer = torch.optim.Adam(self.policy.critic.parameters(), lr=1e-3)
 
+        # Information to normalize states
         self.state_mean = torch.zeros(11).to(self.device)
         self.state_var = torch.ones(11).to(self.device)
         self.state_count = 1e-5
@@ -123,7 +125,7 @@ class Agent(object):
         rewards = torch.stack(self.rewards).to(self.device).squeeze()
         done = torch.Tensor(self.done).to(self.device)
 
-        
+        # Use parameter to separate REINFORCE and Actor-Critic
         if self.use_actor_critic:
             values = torch.stack(self.state_values).squeeze().to(self.device)
             next_values = torch.stack(self.next_state_values).squeeze().to(self.device)
@@ -132,27 +134,27 @@ class Agent(object):
             advantages = (returns - values).detach()
             advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
 
+            # Used to get entropy
             normal_dist, _ = self.policy(states)
             entropy = normal_dist.entropy().sum(dim=-1).mean()
 
             #Update actor
-            actor_loss = -(action_log_probs * advantages).mean() - 0.05 * entropy
+            actor_loss = -(action_log_probs * advantages).mean() - 0.001 * entropy
             self.actor_optimizer.zero_grad()
             actor_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(self.policy.actor.parameters(), 1.0)
             self.actor_optimizer.step()
 
             #Update critic
-            critic_loss = F.mse_loss(values, returns)
+            critic_loss = F.mse_loss(values, returns.detach())
             self.critic_optimizer.zero_grad()
             critic_loss.backward()
-            torch.nn.utils.clip_grad_norm_(self.policy.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(self.policy.critic.parameters(), 1.0)
             self.critic_optimizer.step()
             
-        else:
+        else: #REINFORCE
             returns = discount_rewards(rewards, self.gamma)
-            baseline = self.baseline
-            advantage = returns - baseline
+            advantage = returns - self.baseline
             advantage = (advantage - advantage.mean()) / (advantage.std() + 1e-8)
             normal_dist, _ = self.policy(states)
             entropy = normal_dist.entropy().sum(dim=-1).mean()
@@ -172,12 +174,12 @@ class Agent(object):
                 print("Returns std:", returns.std().item())
                 print("Actor loss:", actor_loss.item())
                 print("Critic loss:", critic_loss.item())
-                print("[DEBUG] Sample value prediction:", values[0].item())
-                print("[DEBUG] Sample target return:", returns[0].item())
-                print("[DEBUG] Value prediction mean:", values.mean().item())
-                print("[DEBUG] Target returns mean:", returns.mean().item())
-                print("[DEBUG] Value prediction std:", values.std().item())
-                print("[DEBUG] Target returns std:", returns.std().item())
+                print("Sample value prediction:", values[0].item())
+                print("Sample target return:", returns[0].item())
+                print("Value prediction mean:", values.mean().item())
+                print("Target returns mean:", returns.mean().item())
+                print("Value prediction std:", values.std().item())
+                print("Target returns std:", returns.std().item())
             else:
                 print("REINFORCE loss:", loss.item())
             print("=================================\n")

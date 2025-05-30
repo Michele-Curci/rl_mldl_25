@@ -1,25 +1,22 @@
 Remember to change the path to the model
 
-Train with REINFORCE
+REINFORCE
 python "REINFORCE and Actor-Critic/train.py"
 python "REINFORCE and Actor-Critic/train.py" --baseline 20
+python "REINFORCE and Actor-Critic/test.py" --model 'path to model'
 
-Train with actor-critic
+Actor-Critic
 python "REINFORCE and Actor-Critic/train.py" --actor-critic
+python "REINFORCE and Actor-Critic/test.py" --model 'path to model' --actor-critic
 
-Test with REINFORCE
-python test.py --model model.mdl
+PPO
+python "PPO and SAC/train_PPO.py"
+python "PPO and SAC/test_PPO.py" (set model path in .py file)
 
-Test with actor-critic
-python test.py --model model.mdl --actor-critic
-
-Remember to use gpu
---device cuda
-
-To run from folder
+SAC
 python "PPO and SAC/train_SAC.py"
-python "PPO and SAC/test_sb3.py"
-python "Extensions/meta_rl.py"
+python "PPO and SAC/test_SAC.py" (set model path in .py file)
 
-To check tensorboard
-tensorboard --logdir ./sac_custom_hopper/
+Extensions
+python "Extensions/meta_rl.py"   (For Reptile)
+python "Extensions/ADV_PPO.py"   (FOR ADV)

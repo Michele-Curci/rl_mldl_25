@@ -61,14 +61,17 @@ def main():
         state = env.reset()
 
         while not done:
+            # Get action for step
             if args.actor_critic:
                 action, log_prob, value = agent.get_action(state)
             else:
                 action, log_prob, _ = agent.get_action(state)
                 value = None  # Unused in REINFORCE
 
+            # Apply the action via step
             next_state, reward, done, info = env.step(action.detach().cpu().numpy())
 
+            # Get value for next action if using actor critic and store information
             if args.actor_critic:
                 if not done:
                     _, _, next_value = agent.get_action(next_state, evaluation=True)
@@ -78,19 +81,21 @@ def main():
             else:
                 agent.store_outcome(state, next_state, log_prob, reward, done)
 
+            #Update state
             state = next_state
             train_reward += reward
 
         episodes_returns.append(train_reward)
-
         wandb.log({"episode": episode, "return": train_reward})
 
+        # Update policy at the end of the episode
         agent.update_policy()
 
         if (episode + 1) % args.print_every == 0:
             print(f'Training episode: {episode + 1}')
             print(f'Episode return: {train_reward:.2f}')
 
+    # Save the model
     model_name = "ActorCritic.mdl" if args.actor_critic else f"Reinforce{'Baseline' if args.baseline != 0 else ''}.mdl"
     torch.save(agent.policy.state_dict(), model_name)
     wandb.save(model_name)

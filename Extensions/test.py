@@ -35,16 +35,14 @@ def test_reptile_meta_model(model_path="reptile_normal_model0.5/ppo_reptile_fina
     for task_idx in range(n_test_tasks):
         print(f"\n[Testing on Task {task_idx+1}]")
         
-        # Step 2: Sample a new test task
-        task_env = DummyVecEnv([lambda: sample_task()])
         
         # Step 3: Clone the model with meta weights
-        test_model = PPO("MlpPolicy", task_env, verbose=0)
+        test_model = PPO("MlpPolicy", env, verbose=0)
         meta_weights = clone_model_weights(meta_model)
         set_model_weights(test_model, meta_weights)
 
         # Step 4: Evaluate before adaptation
-        mean_reward_pre, _ = evaluate_policy(test_model, task_env, n_eval_episodes)
+        mean_reward_pre, _ = evaluate_policy(test_model, env, n_eval_episodes)
         print(f"Mean reward before adaptation: {mean_reward_pre:.2f}")
         pre_adapt_rewards.append(mean_reward_pre)
 
@@ -52,7 +50,7 @@ def test_reptile_meta_model(model_path="reptile_normal_model0.5/ppo_reptile_fina
         test_model.learn(total_timesteps=inner_steps)
 
         # Step 6: Evaluate after adaptation
-        mean_reward_post, _ = evaluate_policy(test_model, task_env, n_eval_episodes)
+        mean_reward_post, _ = evaluate_policy(test_model, env, n_eval_episodes)
         print(f"Mean reward after adaptation: {mean_reward_post:.2f}")
         post_adapt_rewards.append(mean_reward_post)
 

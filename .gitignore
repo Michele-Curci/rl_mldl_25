@@ -14,6 +14,7 @@ sac_source_hopper/
 sac_target_hopper/
 udr_sac_custom_hopper/
 ndr_sac_source_hopper/
+ndr_ppo_source_hopper/
 models/
 statistics/
 plots/
@@ -23,3 +24,4 @@ reptile_normal_model0.1/
 reptile_normal_model0.2/
 reptile_normal_model0.5/
 wandb/
+Extensions/remove.py
