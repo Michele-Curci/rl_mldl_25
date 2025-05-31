@@ -40,7 +40,8 @@ def test_policy(env_name, model_path):
 
 
 def main():
-    env_name, model_path = 'CustomHopper-target-v0', "./models/NDR_SAC_Source_model.zip"
+    env_name = 'CustomHopper-target-v0'
+    model_path = "./models/SAC_Source.zip"  #other models: SAC_Target, SAC_UDR, SAC_NDR
 
     render_test(env_name, model_path)
     test_policy(env_name, model_path)

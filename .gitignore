@@ -15,7 +15,6 @@ sac_target_hopper/
 udr_sac_custom_hopper/
 ndr_sac_source_hopper/
 ndr_ppo_source_hopper/
-models/
 statistics/
 plots/
 maml_ppo_hopper/

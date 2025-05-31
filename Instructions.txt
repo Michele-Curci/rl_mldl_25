@@ -1,13 +1,12 @@
-Remember to change the path to the model
-
 REINFORCE
 python "REINFORCE and Actor-Critic/train.py"
 python "REINFORCE and Actor-Critic/train.py" --baseline 20
-python "REINFORCE and Actor-Critic/test.py" --model 'path to model'
+python "REINFORCE and Actor-Critic/test.py" --model './models/Reinforce.mdl'
+python "REINFORCE and Actor-Critic/test.py" --model './models/ReinforceBaseline.mdl'
 
 Actor-Critic
 python "REINFORCE and Actor-Critic/train.py" --actor-critic
-python "REINFORCE and Actor-Critic/test.py" --model 'path to model' --actor-critic
+python "REINFORCE and Actor-Critic/test.py" --model './models/ActorCritic.mdl' --actor-critic
 
 PPO
 python "PPO and SAC/train_PPO.py"
@@ -17,6 +16,10 @@ SAC
 python "PPO and SAC/train_SAC.py"
 python "PPO and SAC/test_SAC.py" (set model path in .py file)
 
-Extensions
-python "Extensions/meta_rl.py"   (For Reptile)
-python "Extensions/ADV_PPO.py"   (FOR ADV)
+Reptile
+python "Extensions/meta_rl.py"
+python "Extensions/test_Reptile.py"
+
+ADV
+python "Extensions/ADV_PPO.py"
+python "Extensions/test_ADV.py"

@@ -2,8 +2,11 @@
 import argparse
 import torch
 import gym
-from env.custom_hopper import *
 from agent import Agent, Policy
+import os
+import sys
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from env.custom_hopper import *
 
 
 def parse_args():
